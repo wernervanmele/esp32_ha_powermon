@@ -3,6 +3,7 @@
 #include <MQTTClient.h>
 #include <ArduinoJson.h>
 #include <ESPmDNS.h>
+#include "../sensors/energy_task.h"
 #include "../main.h"
 
 #define HASS_AUTODISC_UPDATE_DELAY_MS pdMS_TO_TICKS(1000)

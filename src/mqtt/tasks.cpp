@@ -22,6 +22,7 @@ bool publishUnlocked = false;
 byte _macrr[6];
 String discoTopicVolt = "homeassistant/sensor/" DEVICE_NAME "/voltage/config";
 String discoTopicAmps = "homeassistant/sensor/" DEVICE_NAME "/current/config";
+String discoTopicPwr = "homeassistant/sensor/" DEVICE_NAME "/power/config";
 String stateTopic = "homeassistant/sensor/" DEVICE_NAME "/state";
 
 bool Hassio::mqttMdns(void)
@@ -68,12 +69,6 @@ void Hassio::mqttKeepAliveTask(void *Parameters)
 
     for (;;)
     {
-        // xTaskNotifyWait(
-        //     0 /* ulBitsToClearOnEntry */,
-        //     0 /* ulBitsToClearOnExit */,
-        //     NULL /* pulNotificationValue */,
-        //     portMAX_DELAY /* xTicksToWait*/
-        // );
 
         if (!didRun)
         {
@@ -132,6 +127,9 @@ void Hassio::autoDiscoveryTask(void *Parameters)
     // Suspend ourselves
     vTaskSuspend(NULL);
 
+    DynamicJsonDocument discoMsgV(1024);
+    DynamicJsonDocument discoMsgI(1024);
+    DynamicJsonDocument discoMsgP(1024);
     char macStr[18] = {0};
     DEBUG_PRINTF("[MQTT] Starting home-assistant discovery task, running on core: %d\n", xPortGetCoreID());
     String mcu_ident = WiFi.macAddress().c_str();
@@ -141,10 +139,9 @@ void Hassio::autoDiscoveryTask(void *Parameters)
     for (;;)
     {
 
-        DynamicJsonDocument discoMsgV(1024);
-        DynamicJsonDocument discoMsgI(1024);
         char tmplVoltage[768] = {0};
         char tmplCurrent[768] = {0};
+        char tmplPower[768] = {0};
 
         if (!mqttClient.connected())
         {
@@ -156,14 +153,13 @@ void Hassio::autoDiscoveryTask(void *Parameters)
         DEBUG_PRINTLN("Connected to MQTT, sending auto discovery to Home-Assistant");
         DEBUG_PRINTLN("Register voltage sensor");
 
+        // Build Discovery json's
         discoMsgV["name"] = "Voltage";
         discoMsgV["dev_cla"] = "voltage";
         discoMsgV["unit_of_meas"] = "V";
         discoMsgV["icon"] = "mdi:transmission-tower";
         discoMsgV["stat_topic"] = stateTopic;
         discoMsgV["object_id"] = "voltage";
-        // discoMsgV["frc_upd"] = true;
-        // discoMsgV["retain"] = true;
         discoMsgV["val_tpl"] = "{{ value_json.voltage }}";
         discoMsgV["unique_id"] = String(macStr) + "-volt";
         JsonObject deviceV = discoMsgV.createNestedObject("device");
@@ -181,8 +177,6 @@ void Hassio::autoDiscoveryTask(void *Parameters)
         discoMsgI["icon"] = "mdi:transmission-tower";
         discoMsgI["stat_topic"] = stateTopic;
         discoMsgI["object_id"] = "current";
-        // discoMsgI["frc_upd"] = true;
-        // discoMsgI["retain"] = true;
         discoMsgI["val_tpl"] = "{{ value_json.current }}";
         discoMsgI["unique_id"] = String(macStr) + "-current";
         JsonObject deviceI = discoMsgI.createNestedObject("device");
@@ -193,6 +187,23 @@ void Hassio::autoDiscoveryTask(void *Parameters)
         JsonArray identI = deviceI.createNestedArray("identifiers");
         identI.add(DEVICE_NAME);
         identI.add(mcu_ident);
+
+        discoMsgP["name"] = "Power";
+        discoMsgP["dev_cla"] = "power";
+        discoMsgP["unit_of_meas"] = "W";
+        discoMsgP["icon"] = "mdi:transmission-tower";
+        discoMsgP["stat_topic"] = stateTopic;
+        discoMsgP["object_id"] = "power";
+        discoMsgP["val_tpl"] = "{{ value_json.power }}";
+        discoMsgP["unique_id"] = String(macStr) + "-power";
+        JsonObject deviceP = discoMsgP.createNestedObject("device");
+        deviceP["name"] = DEVICE_NAME;
+        deviceP["hw_version"] = "Rev: 0";
+        deviceP["model"] = "Powermon Home Energy sensor";
+        deviceP["manufacturer"] = "Wespressif";
+        JsonArray identP = deviceP.createNestedArray("identifiers");
+        identP.add(DEVICE_NAME);
+        identP.add(mcu_ident);
 
         serializeJsonPretty(discoMsgI, tmplCurrent);
 
@@ -211,6 +222,15 @@ void Hassio::autoDiscoveryTask(void *Parameters)
         size_t nv = serializeJson(discoMsgV, tmplVoltage);
 
         if (mqttClient.publish(discoTopicVolt.c_str(), tmplVoltage, nv))
+            DEBUG_PRINTLN("Succeeded !!!");
+
+        serializeJsonPretty(discoMsgP, tmplPower);
+
+        DEBUG_PRINT(F("Voltage Entity discovery message: "));
+        DEBUG_PRINTLN(F(tmplPower));
+        size_t nq = serializeJson(discoMsgP, tmplPower);
+
+        if (mqttClient.publish(discoTopicPwr.c_str(), tmplPower, nq))
         {
             DEBUG_PRINTLN("Succeeded !!!");
 
@@ -230,20 +250,24 @@ void Hassio::autoDiscoveryTask(void *Parameters)
 
 void Hassio::publishPayload(void *Parameters)
 {
-    // Suspend ourselves
+    // Suspend ourselves, task will be released by the DiscoveryTask
     vTaskSuspend(NULL);
 
     DEBUG_PRINTF("[MQTT] Publish payload task!!, running on core: %d\n", xPortGetCoreID());
     char buffer[512];
+    energyMsg_t PwrPacket;
     DynamicJsonDocument payload(1024);
 
     for (;;)
     {
 
-        float mainsvolt = random(225, 235);
-        float mainscurrent = random(1, 19);
-        payload["voltage"] = mainsvolt;
-        payload["current"] = mainscurrent;
+        xQueueReceive(xQxfer, &PwrPacket, portMAX_DELAY);
+
+        // float mainsvolt = random(225, 235);
+        // float mainscurrent = random(1, 19);
+        payload["voltage"] = PwrPacket.voltage;
+        payload["current"] = PwrPacket.current;
+        payload["power"] = PwrPacket.power;
 
         // serializeJsonPretty(payload, buffer);
         size_t x = serializeJson(payload, buffer);

@@ -3,6 +3,10 @@
 #include <Arduino.h>
 #include "mqtt/tasks.h"
 #include "wifi/tasks.h"
+#include "sensors/energy_task.h"
+
+#define ADC_VRMS_IN 33 // GPIO33 - zmpt101b input
+#define ADC_IRMS_IN -1 // GPIO35 Irms analogRead() input. -1 = nothing connected
 
 // extern SemaphoreHandle_t _wifi_ok;
 // extern SemaphoreHandle_t _mqtt_ok;
@@ -10,6 +14,8 @@ extern TaskHandle_t wifiConnectivityHandle;
 extern TaskHandle_t HassioAutodiscoveryHandle;
 extern TaskHandle_t mqttKeepAlive;
 extern TaskHandle_t mqttPublishPayload;
+
+extern QueueHandle_t xQxfer;
 
 /* MQTT Settings */
 /* obsolute now autodiscovery via mDNS */
@@ -24,7 +30,7 @@ extern TaskHandle_t mqttPublishPayload;
 #define ssid "JOEPLA_IOT"
 #define password "shoarma2burn"
 #define WIFI_TIMEOUT 60000U // 60 Seconds
-#define MQTT_CONNECT_DELAY  200U
+#define MQTT_CONNECT_DELAY 200U
 #define MQTT_CONNECT_TIMEOUT 20000U
 
 /* Serial Printing */

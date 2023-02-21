@@ -5,3 +5,4 @@
 .vscode/launch.json
 .vscode/ipch
 /packages
+/lib/EmonLib-esp32

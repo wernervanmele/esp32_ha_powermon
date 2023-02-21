@@ -25,6 +25,8 @@ void setup()
 	DEBUG_PRINT("Entering setup func, running on core: ");
 	DEBUG_PRINTLN(xPortGetCoreID());
 
+	xQxfer = xQueueCreate(8, sizeof(energyMsg_t));
+
 	vTaskDelay(pdMS_TO_TICKS(500));
 
 	xTaskCreate(
@@ -35,8 +37,6 @@ void setup()
 		1,
 		&wifiConnectivityHandle);
 
-	vTaskDelay(pdMS_TO_TICKS(333));
-
 	xTaskCreate(
 		Hassio::mqttKeepAliveTask,
 		"mqttKeepAliveTask",
@@ -45,8 +45,6 @@ void setup()
 		1,
 		&mqttKeepAlive);
 
-	vTaskDelay(pdMS_TO_TICKS(333));
-
 	xTaskCreate(
 		Hassio::autoDiscoveryTask,
 		"HassIOautoDiscovery",
@@ -54,8 +52,6 @@ void setup()
 		NULL,
 		2,
 		&HassioAutodiscoveryHandle);
-
-	vTaskDelay(pdMS_TO_TICKS(333));
 
 	xTaskCreate(
 		Hassio::publishPayload,

@@ -1,3 +1,7 @@
 {
 "isGitignoreExtActive": true,
+"files.associations": {
+    "cmath": "cpp",
+    "cctype": "cpp"
+},
 }
