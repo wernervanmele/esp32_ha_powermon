@@ -2,6 +2,7 @@
 "isGitignoreExtActive": true,
 "files.associations": {
     "cmath": "cpp",
-    "cctype": "cpp"
+    "cctype": "cpp",
+    "esp32-hal-gpio.h": "c"
 },
 }

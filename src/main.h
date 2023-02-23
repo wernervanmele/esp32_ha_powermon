@@ -14,6 +14,7 @@ extern TaskHandle_t wifiConnectivityHandle;
 extern TaskHandle_t HassioAutodiscoveryHandle;
 extern TaskHandle_t mqttKeepAlive;
 extern TaskHandle_t mqttPublishPayload;
+extern TaskHandle_t energyMonTask;
 
 extern QueueHandle_t xQxfer;
 
@@ -32,6 +33,7 @@ extern QueueHandle_t xQxfer;
 #define WIFI_TIMEOUT 60000U // 60 Seconds
 #define MQTT_CONNECT_DELAY 200U
 #define MQTT_CONNECT_TIMEOUT 20000U
+#define PUB_INTERVAL pdMS_TO_TICKS(60 * 1000) // 60 Sec.
 
 /* Serial Printing */
 #ifdef DEBUG

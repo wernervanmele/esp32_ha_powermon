@@ -1,5 +1,8 @@
 #include "energy_task.h"
 
+/*
+https://github.com/espressif/arduino-esp32/issues/102
+*/
 //
 EnergyMonitor EMon1;
 QueueHandle_t xQxfer;
@@ -27,27 +30,63 @@ void Energy::Init()
 
         EMon1.current(ADC_IRMS_IN, 111.1);
     }
-
-    
 }
 
 void Energy::energyMonTask(void *Parameters)
 {
     vTaskSuspend(NULL);
+    Init();
 
-    energyMsg_t PowerPacket;
+    // energyMsg_t PowerPacket;
+    energyMsg_u WattStreamz;
+    unsigned long prevMillis;
 
+    // Measure every second to keep the sensor warm :-)
+    // Publish every minute
     for (;;)
     {
 
+        unsigned long isNow = millis();
+
         EMon1.calcVI(20, 2000);
+        EMon1.serialprint();
 
-        PowerPacket.power = EMon1.Vrms;
-        PowerPacket.current = EMon1.Irms;
-        PowerPacket.power = EMon1.apparentPower; // apparent = RMS
+        if (ADC_VRMS_IN)
+        {
+            WattStreamz.PowerBucket.voltage = EMon1.Vrms;
+        }
+        else
+        {
+            WattStreamz.PowerBucket.voltage = 0.0f;
+        }
 
-        xQueueSend(xQxfer, &PowerPacket, 0);
+        if (ADC_IRMS_IN)
+        {
+            WattStreamz.PowerBucket.current = EMon1.Irms;
+        }
+        else
+        {
+            WattStreamz.PowerBucket.current = 0.0f;
+        }
 
-        vTaskDelay(RETRY_1SEC * 60);
+        if (ADC_VRMS_IN && ADC_IRMS_IN)
+        {
+            WattStreamz.PowerBucket.power = EMon1.apparentPower; // apparent = RMS
+        }
+        else
+        {
+            WattStreamz.PowerBucket.power = 0.0f;
+        }
+
+        if (millis() - prevMillis >= PUB_INTERVAL)
+        {
+            xQueueSend(xQxfer, &WattStreamz.WattArray, 0);
+
+            // wake the publish payload task to populate HomeAssistant
+            vTaskResume(mqttPublishPayload);
+            prevMillis = isNow;
+        }
+
+        vTaskDelay(RETRY_1SEC);
     }
 }
