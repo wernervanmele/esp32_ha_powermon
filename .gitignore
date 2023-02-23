@@ -6,3 +6,4 @@
 .vscode/ipch
 /packages
 /lib/EmonLib-esp32
+/todo.txt
