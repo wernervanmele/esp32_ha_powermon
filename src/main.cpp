@@ -14,6 +14,7 @@ TaskHandle_t wifiConnectivityHandle;
 TaskHandle_t HassioAutodiscoveryHandle;
 TaskHandle_t mqttKeepAlive;
 TaskHandle_t mqttPublishPayload;
+TaskHandle_t energyMonTask;
 
 void setup()
 {
@@ -48,7 +49,7 @@ void setup()
 	xTaskCreate(
 		Hassio::autoDiscoveryTask,
 		"HassIOautoDiscovery",
-		4096,
+		5120,
 		NULL,
 		2,
 		&HassioAutodiscoveryHandle);
@@ -60,6 +61,14 @@ void setup()
 		NULL,
 		1,
 		&mqttPublishPayload);
+
+	xTaskCreate(
+		Energy::energyMonTask,
+		"PublishData",
+		2048,
+		NULL,
+		1,
+		&energyMonTask);
 
 	vTaskDelete(NULL);
 }

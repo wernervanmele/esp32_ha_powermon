@@ -157,10 +157,12 @@ void Hassio::autoDiscoveryTask(void *Parameters)
         discoMsgV["name"] = "Voltage";
         discoMsgV["dev_cla"] = "voltage";
         discoMsgV["unit_of_meas"] = "V";
+        discoMsgV["retain"] = true;
+        discoMsgV["qos"] = 1;
         discoMsgV["icon"] = "mdi:transmission-tower";
-        discoMsgV["stat_topic"] = stateTopic;
+        discoMsgV["state_topic"] = stateTopic;
         discoMsgV["object_id"] = "voltage";
-        discoMsgV["val_tpl"] = "{{ value_json.voltage }}";
+        discoMsgV["val_tpl"] = "{{ value_json.voltage | round(2) }}";
         discoMsgV["unique_id"] = String(macStr) + "-volt";
         JsonObject deviceV = discoMsgV.createNestedObject("device");
         deviceV["name"] = DEVICE_NAME;
@@ -174,10 +176,12 @@ void Hassio::autoDiscoveryTask(void *Parameters)
         discoMsgI["name"] = "Current";
         discoMsgI["dev_cla"] = "current";
         discoMsgI["unit_of_meas"] = "A";
+        discoMsgI["retain"] = true;
+        discoMsgI["qos"] = 1;
         discoMsgI["icon"] = "mdi:transmission-tower";
-        discoMsgI["stat_topic"] = stateTopic;
+        discoMsgI["state_topic"] = stateTopic;
         discoMsgI["object_id"] = "current";
-        discoMsgI["val_tpl"] = "{{ value_json.current }}";
+        discoMsgI["val_tpl"] = "{{ value_json.current | round(2) }}";
         discoMsgI["unique_id"] = String(macStr) + "-current";
         JsonObject deviceI = discoMsgI.createNestedObject("device");
         deviceI["name"] = DEVICE_NAME;
@@ -191,10 +195,12 @@ void Hassio::autoDiscoveryTask(void *Parameters)
         discoMsgP["name"] = "Power";
         discoMsgP["dev_cla"] = "power";
         discoMsgP["unit_of_meas"] = "W";
+        discoMsgP["retain"] = true;
+        discoMsgP["qos"] = 1;
         discoMsgP["icon"] = "mdi:transmission-tower";
-        discoMsgP["stat_topic"] = stateTopic;
+        discoMsgP["state_topic"] = stateTopic;
         discoMsgP["object_id"] = "power";
-        discoMsgP["val_tpl"] = "{{ value_json.power }}";
+        discoMsgP["val_tpl"] = "{{ value_json.power | round(2) }}";
         discoMsgP["unique_id"] = String(macStr) + "-power";
         JsonObject deviceP = discoMsgP.createNestedObject("device");
         deviceP["name"] = DEVICE_NAME;
@@ -226,7 +232,7 @@ void Hassio::autoDiscoveryTask(void *Parameters)
 
         serializeJsonPretty(discoMsgP, tmplPower);
 
-        DEBUG_PRINT(F("Voltage Entity discovery message: "));
+        DEBUG_PRINT(F("Power Entity discovery message: "));
         DEBUG_PRINTLN(F(tmplPower));
         size_t nq = serializeJson(discoMsgP, tmplPower);
 
@@ -236,13 +242,13 @@ void Hassio::autoDiscoveryTask(void *Parameters)
 
             if (!publishUnlocked)
             {
-                // Resume the payload publish task
-                vTaskResume(mqttPublishPayload);
+                // wake the energyMon task which can wake the publush payload task
+                vTaskResume(energyMonTask);
                 publishUnlocked = true;
             }
         }
 
-        vTaskDelay(HASS_AUTODISC_UPDATE_DELAY_MS * 60 * 15);
+        vTaskDelay(HASS_AUTODISC_UPDATE_DELAY_MS * 60 * 5);
     }
 
     vTaskDelete(NULL);
@@ -255,19 +261,23 @@ void Hassio::publishPayload(void *Parameters)
 
     DEBUG_PRINTF("[MQTT] Publish payload task!!, running on core: %d\n", xPortGetCoreID());
     char buffer[512];
-    energyMsg_t PwrPacket;
+    // energyMsg_t PwrPacket;
+    energyMsg_u PowerWattz;
     DynamicJsonDocument payload(1024);
 
     for (;;)
     {
 
-        xQueueReceive(xQxfer, &PwrPacket, portMAX_DELAY);
+        xQueueReceive(xQxfer, &PowerWattz.WattArray, portMAX_DELAY);
 
         // float mainsvolt = random(225, 235);
         // float mainscurrent = random(1, 19);
-        payload["voltage"] = PwrPacket.voltage;
-        payload["current"] = PwrPacket.current;
-        payload["power"] = PwrPacket.power;
+        // payload["voltage"] = PwrPacket.voltage;
+        // payload["current"] = PwrPacket.current;
+        // payload["power"] = PwrPacket.power;
+        payload["voltage"] = PowerWattz.PowerBucket.voltage;
+        payload["current"] = PowerWattz.PowerBucket.current;
+        payload["power"] = PowerWattz.PowerBucket.power;
 
         // serializeJsonPretty(payload, buffer);
         size_t x = serializeJson(payload, buffer);
@@ -283,7 +293,9 @@ void Hassio::publishPayload(void *Parameters)
             DEBUG_PRINTLN(F("No Bueno ?"));
         }
 
-        vTaskDelay(RETRY_1SEC * 60);
+        //vTaskDelay(RETRY_1SEC * 60);
+        // Suspend ourselves till energyMon wake us again
+        vTaskSuspend(NULL);
     }
     vTaskDelete(NULL);
 }

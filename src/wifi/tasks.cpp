@@ -55,12 +55,6 @@ void WifiClient::WifiTask(void *Parameters)
                 vTaskResume(mqttKeepAlive);
                 mqttUnlocked = true;
             }
-            // Tell mqtt task Wifi connection is ok
-            // xTaskNotify(
-            //     mqttKeepAlive /* xTaskToNotify */,
-            //     0 /* ulValue */,
-            //     eNoAction /* eAction */
-            // );
         }
     }
 
