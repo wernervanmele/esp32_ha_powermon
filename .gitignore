@@ -7,3 +7,5 @@
 /packages
 /lib/EmonLib-esp32
 /todo.txt
+/src/credentials.h
+/credentials.ini
