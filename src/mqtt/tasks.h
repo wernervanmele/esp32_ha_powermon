@@ -1,5 +1,6 @@
 #pragma once
-#include <WiFiClientSecure.h>
+//#include <WiFiClientSecure.h>
+#include <WiFi.h>
 #include <MQTTClient.h>
 #include <ArduinoJson.h>
 #include <ESPmDNS.h>

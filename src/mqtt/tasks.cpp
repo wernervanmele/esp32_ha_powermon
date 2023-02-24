@@ -9,7 +9,7 @@
 */
 MQTTClient mqttClient(1024);
 //
-//  WiFiClientSecure wifiClient;
+//WiFiClientSecure wifiClient;
 WiFiClient wifiClient;
 MDNSResponder getdns;
 
@@ -65,6 +65,7 @@ void Hassio::mqttKeepAliveTask(void *Parameters)
     // vTaskDelay(RETRY_1SEC * 5); // Wait abit to be sure we're connected to our Broker.
     // xSemaphoreTake(_mqtt_ok, portMAX_DELAY);
     DEBUG_PRINTF("[MQTT] Starting home-assistant KeepAlive task, running on core: %d\n", xPortGetCoreID());
+   // wifiClient.setInsecure();       // yes I know asshole.
 
     for (;;)
     {
