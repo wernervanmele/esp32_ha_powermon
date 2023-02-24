@@ -270,11 +270,6 @@ void Hassio::publishPayload(void *Parameters)
 
         xQueueReceive(xQxfer, &PowerWattz.WattArray, portMAX_DELAY);
 
-        // float mainsvolt = random(225, 235);
-        // float mainscurrent = random(1, 19);
-        // payload["voltage"] = PwrPacket.voltage;
-        // payload["current"] = PwrPacket.current;
-        // payload["power"] = PwrPacket.power;
         payload["voltage"] = PowerWattz.PowerBucket.voltage;
         payload["current"] = PowerWattz.PowerBucket.current;
         payload["power"] = PowerWattz.PowerBucket.power;
@@ -292,8 +287,6 @@ void Hassio::publishPayload(void *Parameters)
         {
             DEBUG_PRINTLN(F("No Bueno ?"));
         }
-
-        //vTaskDelay(RETRY_1SEC * 60);
         // Suspend ourselves till energyMon wake us again
         vTaskSuspend(NULL);
     }
