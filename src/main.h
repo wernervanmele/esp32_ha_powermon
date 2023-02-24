@@ -4,7 +4,10 @@
 #include "mqtt/tasks.h"
 #include "wifi/tasks.h"
 #include "sensors/energy_task.h"
+#include "ota/tasks.h"
+#include "credentials.h"
 
+/* Define Analog Input pins */
 #define ADC_VRMS_IN 33 // GPIO33 - zmpt101b input
 #define ADC_IRMS_IN -1 // GPIO35 Irms analogRead() input. -1 = nothing connected
 
@@ -15,7 +18,7 @@ extern TaskHandle_t HassioAutodiscoveryHandle;
 extern TaskHandle_t mqttKeepAlive;
 extern TaskHandle_t mqttPublishPayload;
 extern TaskHandle_t energyMonTask;
-
+extern TaskHandle_t otaFirmkwareUpdate;
 extern QueueHandle_t xQxfer;
 
 /* MQTT Settings */
@@ -23,17 +26,20 @@ extern QueueHandle_t xQxfer;
 #define DEVICE_NAME "esp32_powermonitor_1"
 #define HA_MQTT_BROKER "192.168.28.16"
 #define HA_MQTT_PORT 1883
-#define HA_MQTT_USER "mqtt-user"
-#define HA_MQTT_PASSWORD "mqtt-password"
+#define HA_MQTT_USER MY_HA_MQTT_USER
+#define HA_MQTT_PASSWORD MY_HA_MQTT_PASSWORD
 
 /*  WiFi Settings */
 // Set your access point network credentials
-#define ssid "JOEPLA_IOT"
-#define password "shoarma2burn"
+#define ssid my_ssid
+#define password my_password
 #define WIFI_TIMEOUT 60000U // 60 Seconds
 #define MQTT_CONNECT_DELAY 200U
 #define MQTT_CONNECT_TIMEOUT 20000U
-#define PUB_INTERVAL pdMS_TO_TICKS(60 * 1000) // 60 Sec.
+#define PUB_INTERVAL 60000U // 60 Sec.
+
+/* OTA Settimgs */
+#define OTA_PASSWORD MY_OTA_PASSWORD
 
 /* Serial Printing */
 #ifdef DEBUG

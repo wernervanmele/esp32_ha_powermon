@@ -15,6 +15,7 @@ TaskHandle_t HassioAutodiscoveryHandle;
 TaskHandle_t mqttKeepAlive;
 TaskHandle_t mqttPublishPayload;
 TaskHandle_t energyMonTask;
+TaskHandle_t otaFirmkwareUpdate;
 
 void setup()
 {
@@ -39,11 +40,19 @@ void setup()
 		&wifiConnectivityHandle);
 
 	xTaskCreate(
+		OTA::updateTask,
+		"OTAUpdate",
+		2048,
+		NULL,
+		1,
+		&otaFirmkwareUpdate);
+
+	xTaskCreate(
 		Hassio::mqttKeepAliveTask,
 		"mqttKeepAliveTask",
 		2048,
 		NULL,
-		1,
+		2,
 		&mqttKeepAlive);
 
 	xTaskCreate(
@@ -55,20 +64,20 @@ void setup()
 		&HassioAutodiscoveryHandle);
 
 	xTaskCreate(
-		Hassio::publishPayload,
-		"PublishData",
-		3072,
-		NULL,
-		1,
-		&mqttPublishPayload);
-
-	xTaskCreate(
 		Energy::energyMonTask,
 		"PublishData",
 		2048,
 		NULL,
-		1,
+		2,
 		&energyMonTask);
+
+	xTaskCreate(
+		Hassio::publishPayload,
+		"PublishData",
+		3072,
+		NULL,
+		2,
+		&mqttPublishPayload);
 
 	vTaskDelete(NULL);
 }

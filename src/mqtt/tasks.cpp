@@ -27,15 +27,14 @@ String stateTopic = "homeassistant/sensor/" DEVICE_NAME "/state";
 
 bool Hassio::mqttMdns(void)
 {
-    if (getdns.begin(DEVICE_NAME))
+    if (getdns.begin(DEVICE_NAME)) // enable mDNS and register ourselves onto the network
     {
-        // DEBUG_PRINTLN(F("mDNS Service started"));
 
         // query local lan to discover mqtt broker (just experiment);
         int r = getdns.queryService("mqtt", "tcp");
         if (r == 0)
         {
-            DEBUG_PRINTLN(F("No local mqtt broker discovered, maybe not register with mDNS ?"));
+            DEBUG_PRINTLN(F("No local mqtt broker discovered, maybe not registered with mDNS ?"));
         }
         else
         {
@@ -97,7 +96,7 @@ void Hassio::mqttKeepAliveTask(void *Parameters)
                 continue;
             }
 
-            mqttClient.setKeepAlive(15);
+            mqttClient.setKeepAlive(30);
             mqttClient.begin(mqtt_ip, mqtt_port, wifiClient);
             DEBUG_PRINTLN(F("[MQTT] Connection to broker initiated"));
 
@@ -248,7 +247,7 @@ void Hassio::autoDiscoveryTask(void *Parameters)
             }
         }
 
-        vTaskDelay(HASS_AUTODISC_UPDATE_DELAY_MS * 60 * 5);
+        vTaskDelay(HASS_AUTODISC_UPDATE_DELAY_MS * 60 * 10); // send autoDiscover message every 10mins.
     }
 
     vTaskDelete(NULL);
@@ -268,6 +267,7 @@ void Hassio::publishPayload(void *Parameters)
     for (;;)
     {
 
+        // Deliver data over Queue in byetArray format because it is fun.
         xQueueReceive(xQxfer, &PowerWattz.WattArray, portMAX_DELAY);
 
         payload["voltage"] = PowerWattz.PowerBucket.voltage;

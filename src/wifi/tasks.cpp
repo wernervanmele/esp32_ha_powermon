@@ -51,8 +51,11 @@ void WifiClient::WifiTask(void *Parameters)
 
             if (!mqttUnlocked)
             {
+                vTaskDelay(RETRY_1SEC / 3);
                 // WiFi is connected, release the mqqt task
                 vTaskResume(mqttKeepAlive);
+                // Wake OTA Task once WiFI is online
+                vTaskResume(otaFirmkwareUpdate);
                 mqttUnlocked = true;
             }
         }
