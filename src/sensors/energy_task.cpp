@@ -6,6 +6,7 @@ https://github.com/espressif/arduino-esp32/issues/102
 //
 EnergyMonitor EMon1;
 QueueHandle_t xQxfer;
+float vultza = 0.0f;
 
 void Energy::Init()
 {
@@ -19,7 +20,7 @@ void Energy::Init()
         adcAttachPin(ADC_VRMS_IN);
         adc1_config_channel_atten(ADC1_CHANNEL_5, ADC_ATTEN_DB_11); // GPIO33
 
-        EMon1.voltage(ADC_VRMS_IN, 579.5, 1.7);
+        EMon1.voltage(ADC_VRMS_IN, 579, 1.7);
     }
 
     if (ADC_IRMS_IN)
@@ -45,15 +46,26 @@ void Energy::energyMonTask(void *Parameters)
     // Publish every minute
     for (;;)
     {
-
+        // FIXME no power detection instead off something like 7.55V
         unsigned long isNow = millis();
 
         EMon1.calcVI(20, 2000);
+#ifdef DEBUG
         EMon1.serialprint();
+#endif
 
         if (ADC_VRMS_IN)
         {
-            WattStreamz.PowerBucket.voltage = EMon1.Vrms;
+            // powerloss detection ????
+            vultza = EMon1.Vrms;
+            if (vultza < 110) // arbitrary number
+            {
+                WattStreamz.PowerBucket.voltage = 0.0f;
+            }
+            else
+            {
+                WattStreamz.PowerBucket.voltage = vultza;
+            }
         }
         else
         {
@@ -62,7 +74,14 @@ void Energy::energyMonTask(void *Parameters)
 
         if (ADC_IRMS_IN)
         {
-            WattStreamz.PowerBucket.current = EMon1.Irms;
+            if (vultza < 110)
+            {
+                WattStreamz.PowerBucket.current = 0.0f;
+            }
+            else
+            {
+                WattStreamz.PowerBucket.current = EMon1.Irms;
+            }
         }
         else
         {
@@ -71,7 +90,14 @@ void Energy::energyMonTask(void *Parameters)
 
         if (ADC_VRMS_IN && ADC_IRMS_IN)
         {
-            WattStreamz.PowerBucket.power = EMon1.apparentPower; // apparent = RMS
+            if (vultza < 110)
+            {
+                WattStreamz.PowerBucket.power = 0.0f;
+            }
+            else
+            {
+                WattStreamz.PowerBucket.power = EMon1.apparentPower; // apparent = RMS
+            }
         }
         else
         {

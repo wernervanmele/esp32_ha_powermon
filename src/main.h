@@ -25,7 +25,7 @@ extern QueueHandle_t xQxfer;
 /* obsolute now autodiscovery via mDNS */
 #define DEVICE_NAME "esp32_powermonitor_1"
 #define HA_MQTT_BROKER "192.168.28.16"
-#define HA_MQTT_PORT 1883
+#define HA_MQTT_PORT 8883
 #define HA_MQTT_USER MY_HA_MQTT_USER
 #define HA_MQTT_PASSWORD MY_HA_MQTT_PASSWORD
 

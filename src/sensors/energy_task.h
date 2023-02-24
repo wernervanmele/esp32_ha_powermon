@@ -4,6 +4,7 @@
 #include <EmonLib.h>
 #include "../main.h"
 
+/* **** Struct via byteArray experiment, starring Miss Union **** */
 typedef struct energyMsg
 {
     float voltage;
@@ -13,11 +14,12 @@ typedef struct energyMsg
 
 const int structSize = sizeof(energyMsg_t);
 
-typedef union Floep
+typedef union CombiPacketBro
 {
     energyMsg_t PowerBucket;
     byte WattArray[structSize];
 } energyMsg_u;
+/* ******************************************* */
 
 namespace Energy
 {
