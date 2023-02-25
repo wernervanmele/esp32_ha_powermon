@@ -1,3 +1,13 @@
+/**
+ * @file tasks.cpp
+ * @author Werner (wvanmele.newsletter@gmail.com)
+ * @brief All things Mqtt, keepAlive, HA Discovery, and publish payload
+ * @version 0.1
+ * @date 2023-02-25
+ *
+ * @copyright Copyright (c) 2023
+ *
+ */
 #include "tasks.h"
 /*
     Sources:
@@ -9,7 +19,7 @@
 */
 MQTTClient mqttClient(1024);
 //
-//WiFiClientSecure wifiClient;
+// WiFiClientSecure wifiClient;
 WiFiClient wifiClient;
 MDNSResponder getdns;
 
@@ -29,20 +39,23 @@ bool Hassio::mqttMdns(void)
 {
     if (getdns.begin(DEVICE_NAME)) // enable mDNS and register ourselves onto the network
     {
-
         // query local lan to discover mqtt broker (just experiment);
         int r = getdns.queryService("mqtt", "tcp");
         if (r == 0)
         {
-            DEBUG_PRINTLN(F("No local mqtt broker discovered, maybe not registered with mDNS ?"));
+            DEBUG_PRINTLN(F("[DEBUG] No local mqtt broker discovered, maybe not registered with mDNS ?"));
+            DEBUG_PRINTLN(F("[DEBUG] Let's try preconfigured backup values"));
+            mqtt_ip =  IPAddress().fromString(String(HA_MQTT_BROKER));
+            mqtt_hostname = DEVICE_NAME;
+            mqtt_port = HA_MQTT_PORT;
         }
         else
         {
             // something discovered ??
-            for (int broker = 0; broker < r; broker++)
-            {
-                DEBUG_PRINTF("[mDNS] Index: %d - Hostname: %s - IP: %s - Port: %d\n", r, getdns.hostname(broker), getdns.IP(broker).toString().c_str(), getdns.port(broker));
-            }
+            // for (int broker = 0; broker < r; broker++)
+            //{
+            DEBUG_PRINTF("[mDNS] Index: %d - Hostname: %s - IP: %s - Port: %d\n", r, getdns.hostname(0), getdns.IP(0).toString().c_str(), getdns.port(0));
+            //  }
             mqtt_ip = getdns.IP(0);
             mqtt_hostname = getdns.hostname(0);
             mqtt_port = getdns.port(0);
@@ -62,10 +75,7 @@ void Hassio::mqttKeepAliveTask(void *Parameters)
     // Suspend ourselves
     vTaskSuspend(NULL);
 
-    // vTaskDelay(RETRY_1SEC * 5); // Wait abit to be sure we're connected to our Broker.
-    // xSemaphoreTake(_mqtt_ok, portMAX_DELAY);
     DEBUG_PRINTF("[MQTT] Starting home-assistant KeepAlive task, running on core: %d\n", xPortGetCoreID());
-   // wifiClient.setInsecure();       // yes I know asshole.
 
     for (;;)
     {
@@ -166,7 +176,7 @@ void Hassio::autoDiscoveryTask(void *Parameters)
         discoMsgV["unique_id"] = String(macStr) + "-volt";
         JsonObject deviceV = discoMsgV.createNestedObject("device");
         deviceV["name"] = DEVICE_NAME;
-        deviceV["hw_version"] = "Rev: 0";
+        deviceV["hw_version"] = "Rev: A";
         deviceV["model"] = "Powermon Home Energy sensor";
         deviceV["manufacturer"] = "Wespressif";
         JsonArray identV = deviceV.createNestedArray("identifiers");
@@ -185,7 +195,7 @@ void Hassio::autoDiscoveryTask(void *Parameters)
         discoMsgI["unique_id"] = String(macStr) + "-current";
         JsonObject deviceI = discoMsgI.createNestedObject("device");
         deviceI["name"] = DEVICE_NAME;
-        deviceI["hw_version"] = "Rev: 0";
+        deviceI["hw_version"] = "Rev: A";
         deviceI["model"] = "Powermon Home Energy sensor";
         deviceI["manufacturer"] = "Wespressif";
         JsonArray identI = deviceI.createNestedArray("identifiers");
@@ -204,7 +214,7 @@ void Hassio::autoDiscoveryTask(void *Parameters)
         discoMsgP["unique_id"] = String(macStr) + "-power";
         JsonObject deviceP = discoMsgP.createNestedObject("device");
         deviceP["name"] = DEVICE_NAME;
-        deviceP["hw_version"] = "Rev: 0";
+        deviceP["hw_version"] = "Rev: A";
         deviceP["model"] = "Powermon Home Energy sensor";
         deviceP["manufacturer"] = "Wespressif";
         JsonArray identP = deviceP.createNestedArray("identifiers");

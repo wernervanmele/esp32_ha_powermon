@@ -11,8 +11,9 @@
 #define ADC_VRMS_IN 33 // GPIO33 - zmpt101b input
 #define ADC_IRMS_IN -1 // GPIO35 Irms analogRead() input. -1 = nothing connected
 
-// extern SemaphoreHandle_t _wifi_ok;
-// extern SemaphoreHandle_t _mqtt_ok;
+//tell EmonLib voltage is 3.3V 
+#define emonTxV3 1
+
 extern TaskHandle_t wifiConnectivityHandle;
 extern TaskHandle_t HassioAutodiscoveryHandle;
 extern TaskHandle_t mqttKeepAlive;
@@ -25,7 +26,7 @@ extern QueueHandle_t xQxfer;
 /* obsolute now autodiscovery via mDNS */
 #define DEVICE_NAME "esp32_powermonitor_1"
 #define HA_MQTT_BROKER "192.168.28.16"
-#define HA_MQTT_PORT 8883
+#define HA_MQTT_PORT 1883
 #define HA_MQTT_USER MY_HA_MQTT_USER
 #define HA_MQTT_PASSWORD MY_HA_MQTT_PASSWORD
 

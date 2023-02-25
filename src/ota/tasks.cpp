@@ -1,3 +1,13 @@
+/**
+ * @file tasks.cpp
+ * @author Werner (wvanmele.newsletter@gmail.com)
+ * @brief Over The Air firmware update task
+ * @version 0.1
+ * @date 2023-02-25
+ * 
+ * @copyright Copyright (c) 2023
+ * 
+ */
 #include "tasks.h"
 
 void OTA::Init()
