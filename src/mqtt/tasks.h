@@ -12,6 +12,7 @@
 
 extern char tmplVoltage[];
 extern char tmplCurrent[];
+extern char tmplPower[];
 
 namespace Hassio
 {
