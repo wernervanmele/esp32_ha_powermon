@@ -9,10 +9,13 @@
 
 /* Define Analog Input pins */
 #define ADC_VRMS_IN 33 // GPIO33 - zmpt101b input
-#define ADC_IRMS_IN -1 // GPIO35 Irms analogRead() input. -1 = nothing connected
+#define ADC_IRMS_IN 0 // GPIO35 Irms analogRead(), or channel for ADS1X15
 
 //tell EmonLib voltage is 3.3V 
+// Add these via platformio.inni -D
 #define emonTxV3 1
+#define USE_ADS1115 1
+#define USE_DIFFERENTIAL 1
 
 extern TaskHandle_t wifiConnectivityHandle;
 extern TaskHandle_t HassioAutodiscoveryHandle;

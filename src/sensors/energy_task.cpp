@@ -18,14 +18,33 @@ https://espressif-docs.readthedocs-hosted.com/projects/arduino-esp32/en/latest/a
 //
 EnergyMonitor EMon1;
 QueueHandle_t xQxfer;
-float vultza = 0.0f;
-FKIT_MAVG mavgVoltage;
+FKIT_MAVG mavgVoltage; // Init Filter Struct.
+float avgVolt = 0.0f;
+
+#ifdef USE_ADS1115
+Adafruit_ADS1115 ads;
+
+int16_t Energy::adsPinReaderCurrent(int _channel)
+{
+    return ads.readADC_Differential_0_3();
+}
+
+#endif
 
 void Energy::Init()
 {
     // Set esp32 max ADC resultion
     analogReadResolution(ADC_BITS); // esp32 12Bit adc = 4096 steps ( 0-4095)
     adc1_config_width(ADC_WIDTH_12Bit);
+
+#ifdef USE_ADS1115
+    if (!ads.begin())
+    {
+        DEBUG_PRINTLN(F("Failed to Initialize ADS1X15 ADC convertor !!"));
+        while (1)
+            ;
+    }
+#endif
 
     if (ADC_VRMS_IN)
     {
@@ -41,10 +60,14 @@ void Energy::Init()
     if (ADC_IRMS_IN)
     { // Check if ADC for current is defined and initialize
         DEBUG_PRINTLN(F("Initialize ADC Input for Current measurement."));
+#ifndef USE_ADS1115
         adcAttachPin(ADC_IRMS_IN);
         // analogSetPinAttenuation(ADC_IRMS_IN, ADC_11db);
         adc1_config_channel_atten(ADC1_CHANNEL_7, ADC_ATTEN_DB_11); // GPIO35
-
+#else
+        // Callback to assign alternative pinrRead instead of analogRead();
+        EMon1.inputCurrentPinReader = adsPinReaderCurrent;
+#endif
         EMon1.current(ADC_IRMS_IN, 111.1);
     }
 
@@ -73,17 +96,17 @@ void Energy::energyMonTask(void *Parameters)
 
         if (ADC_VRMS_IN)
         {
-            float avgVolt = FKIT_MAVG_Update(&mavgVoltage, EMon1.Vrms);
+            avgVolt = FKIT_MAVG_Update(&mavgVoltage, EMon1.Vrms);
             DEBUG_PRINTF("Averaged Vrms: %.2fV.\n", avgVolt);
 
             // powerloss detection ????
-            if (vultza < 110) // arbitrary number
+            if (avgVolt < 110) // arbitrary number
             {
                 WattStreamz.PowerBucket.voltage = 0.0f;
             }
             else
             {
-                WattStreamz.PowerBucket.voltage = vultza;
+                WattStreamz.PowerBucket.voltage = avgVolt;
             }
         }
         else
@@ -93,7 +116,7 @@ void Energy::energyMonTask(void *Parameters)
 
         if (ADC_IRMS_IN)
         {
-            if (vultza < 110)
+            if (avgVolt < 110)
             {
                 WattStreamz.PowerBucket.current = 0.0f;
             }
@@ -109,7 +132,7 @@ void Energy::energyMonTask(void *Parameters)
 
         if (ADC_VRMS_IN && ADC_IRMS_IN)
         {
-            if (vultza < 110)
+            if (avgVolt < 110)
             {
                 WattStreamz.PowerBucket.power = 0.0f;
             }
