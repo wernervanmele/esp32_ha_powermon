@@ -3,6 +3,8 @@
 "files.associations": {
     "cmath": "cpp",
     "cctype": "cpp",
-    "esp32-hal-gpio.h": "c"
+    "esp32-hal-gpio.h": "c",
+    "*.tcc": "cpp",
+    "random": "cpp"
 },
 }

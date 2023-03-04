@@ -9,6 +9,7 @@
  *
  */
 #include "energy_task.h"
+#include "le_filter_kit.h"
 
 /*
 https://github.com/espressif/arduino-esp32/issues/102
@@ -18,32 +19,36 @@ https://espressif-docs.readthedocs-hosted.com/projects/arduino-esp32/en/latest/a
 EnergyMonitor EMon1;
 QueueHandle_t xQxfer;
 float vultza = 0.0f;
+FKIT_MAVG mavgVoltage;
 
 void Energy::Init()
 {
+    // Set esp32 max ADC resultion
+    analogReadResolution(ADC_BITS); // esp32 12Bit adc = 4096 steps ( 0-4095)
+    adc1_config_width(ADC_WIDTH_12Bit);
 
     if (ADC_VRMS_IN)
     {
         DEBUG_PRINTLN(F("Initialize ADC Input for Voltage measurement."));
         adcAttachPin(ADC_VRMS_IN);
-        analogSetPinAttenuation(ADC_VRMS_IN, ADC_11db);
-        // adc1_config_channel_atten(ADC1_CHANNEL_5, ADC_ATTEN_DB_11); // GPIO33
+        adc1_config_width(ADC_WIDTH_12Bit);
+        // analogSetPinAttenuation(ADC_VRMS_IN, ADC_11db);
+        adc1_config_channel_atten(ADC1_CHANNEL_5, ADC_ATTEN_DB_11); // GPIO33
 
-        EMon1.voltage(ADC_VRMS_IN, 579, 1.7);
+        EMon1.voltage(ADC_VRMS_IN, 573.2, 1.7);
     }
 
     if (ADC_IRMS_IN)
     { // Check if ADC for current is defined and initialize
         DEBUG_PRINTLN(F("Initialize ADC Input for Current measurement."));
         adcAttachPin(ADC_IRMS_IN);
-        analogSetPinAttenuation(ADC_IRMS_IN, ADC_11db);
-        // adc1_config_channel_atten(ADC1_CHANNEL_7, ADC_ATTEN_DB_11); // GPIO35
+        // analogSetPinAttenuation(ADC_IRMS_IN, ADC_11db);
+        adc1_config_channel_atten(ADC1_CHANNEL_7, ADC_ATTEN_DB_11); // GPIO35
 
         EMon1.current(ADC_IRMS_IN, 111.1);
     }
 
-    // Set esp32 max ADC resultion
-    analogReadResolution(ADC_BITS); // esp32 12Bit adc = 4096 steps ( 0-4095)
+    FKIT_MAVG_Init(&mavgVoltage);
 }
 
 void Energy::energyMonTask(void *Parameters)
@@ -51,7 +56,6 @@ void Energy::energyMonTask(void *Parameters)
     vTaskSuspend(NULL);
     Init();
 
-    // energyMsg_t PowerPacket;
     energyMsg_u WattStreamz;
     unsigned long prevMillis;
 
@@ -69,8 +73,10 @@ void Energy::energyMonTask(void *Parameters)
 
         if (ADC_VRMS_IN)
         {
+            float avgVolt = FKIT_MAVG_Update(&mavgVoltage, EMon1.Vrms);
+            DEBUG_PRINTF("Averaged Vrms: %.2fV.\n", avgVolt);
+
             // powerloss detection ????
-            vultza = EMon1.Vrms;
             if (vultza < 110) // arbitrary number
             {
                 WattStreamz.PowerBucket.voltage = 0.0f;

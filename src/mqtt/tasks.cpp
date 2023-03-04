@@ -37,6 +37,7 @@ String stateTopic = "homeassistant/sensor/" DEVICE_NAME "/state";
 
 bool Hassio::mqttMdns(void)
 {
+
     if (getdns.begin(DEVICE_NAME)) // enable mDNS and register ourselves onto the network
     {
         // query local lan to discover mqtt broker (just experiment);
